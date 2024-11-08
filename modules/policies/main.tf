@@ -155,11 +155,11 @@ resource "aws_iam_role_policy" "data_scanning_policy" {
   name  = "DataScanningPolicy"
 
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           "dynamodb:Scan",
           "kms:CreateGrant",
           "kms:Decrypt",
@@ -179,10 +179,8 @@ resource "aws_iam_role_policy" "data_scanning_policy" {
         Resource = "*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
-          "rds:AddTagsToResource"
-        ]
+        Effect = "Allow"
+        Action = ["rds:AddTagsToResource"]
         Resource = [
           "arn:aws:rds:*:*:cluster-snapshot:*",
           "arn:aws:rds:*:*:snapshot:*"
@@ -194,10 +192,8 @@ resource "aws_iam_role_policy" "data_scanning_policy" {
         }
       },
       {
-        Effect   = "Allow"
-        Action   = [
-          "rds:DeleteDBSnapshot"
-        ]
+        Effect = "Allow"
+        Action = ["rds:DeleteDBSnapshot"]
         Resource = "*"
         Condition = {
           StringEquals = {
@@ -206,10 +202,8 @@ resource "aws_iam_role_policy" "data_scanning_policy" {
         }
       },
       {
-        Effect   = "Allow"
-        Action   = [
-          "rds:DeleteDBClusterSnapshot"
-        ]
+        Effect = "Allow"
+        Action = ["rds:DeleteDBClusterSnapshot"]
         Resource = "*"
         Condition = {
           StringEquals = {
@@ -222,7 +216,7 @@ resource "aws_iam_role_policy" "data_scanning_policy" {
 }
 
 resource "aws_iam_role_policy" "ec2_scanning_policy" {
-  count = var.RoleVirtualMachineScanningPolicyEnabled ? 1 : 0
+  count = var.RoleVirtualMachineScanningPolicyEnabled && var.RoleVirtualMachineScanningPolicyEnabled ? 1 : 0
   role  = var.role_name
   name  = "Ec2ScanningPolicy"
 
@@ -243,11 +237,32 @@ resource "aws_iam_role_policy" "ec2_scanning_policy" {
   })
 }
 
+resource "aws_iam_role_policy" "ecr_scanning_policy" {
+  count = var.RoleVirtualMachineScanningPolicyEnabled && var.RoleContainerImageRepositoryScanningPolicyEnabled ? 1 : 0
+  role  = var.role_name
+  name  = "EcrScanningPolicy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "jit_policy" {
-  count = var.RoleVirtualMachineScanningPolicyEnabled ? 1 : 0
-  role   = var.role_name
-  name   = "JitPolicy"
-  
+  count = var.RoleVirtualMachineScanningPolicyEnabled && var.RoleJitPolicyEnabled ? 1 : 0
+  role  = var.role_name
+  name  = "JitPolicy"
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -256,7 +271,7 @@ resource "aws_iam_role_policy" "jit_policy" {
         Action = [
           "iam:ListRoles",
           "iam:ListPolicies"
-        ],
+        ]
         Resource = "*"
       },
       {
@@ -269,16 +284,16 @@ resource "aws_iam_role_policy" "jit_policy" {
           "iam:ListAttachedRolePolicies",
           "iam:ListRolePolicies",
           "iam:PutRolePolicy"
-        ],
-        Resource = "arn:${data.aws_partition.current.partition}:iam::*:role/aws-reserved/sso.amazonaws.com/*"
+        ]
+        Resource = "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"
       },
       {
         Effect = "Allow"
         Action = [
           "iam:GetSAMLProvider",
           "iam:UpdateSAMLProvider"
-        ],
-        Resource = "arn:${data.aws_partition.current.partition}:iam::*:saml-provider/AWSSSO_*_DO_NOT_DELETE"
+        ]
+        Resource = "arn:aws:iam::*:saml-provider/AWSSSO_*_DO_NOT_DELETE"
       },
       {
         Effect = "Allow"
@@ -296,7 +311,7 @@ resource "aws_iam_role_policy" "jit_policy" {
           "sso:PutInlinePolicyToPermissionSet",
           "sso-directory:List*",
           "sso-directory:Search*"
-        ],
+        ]
         Resource = "*"
       }
     ]
